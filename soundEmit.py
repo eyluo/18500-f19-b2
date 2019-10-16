@@ -14,14 +14,13 @@ CHUNK = 128  # CHUNKS of bytes to read each time from mic
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 16000
-THRESHOLD = 1000  # The threshold intensity that defines silence
-                  # and noise signal (an int. lower than THRESHOLD is silence).
 
 SILENCE_LIMIT = 1  # Silence limit in seconds. The max ammount of seconds where
-                   # only silence is recorded. When this time passes the
-                   # recording finishes and the file is delivered.
+# only silence is recorded. When this time passes the
+# recording finishes and the file is delivered.
 
-def listen_for_speech(threshold=THRESHOLD, num_phrases=-1):
+
+def listen_for_speech(num_phrases=-1):
     """
     Listens to Microphone, extracts phrases from it and sends it to 
     Google's TTS service and returns response. a "phrase" is sound 
@@ -33,12 +32,6 @@ def listen_for_speech(threshold=THRESHOLD, num_phrases=-1):
     #Open stream
     p = pyaudio.PyAudio()
 
-    streamIn = p.open(format=FORMAT,
-                    channels=CHANNELS,
-                    rate=RATE,
-                    input=True,
-                    frames_per_buffer=CHUNK)
-
     cur_data = ''  # current chunk  of audio data
     rel = RATE/CHUNK
     slid_win = deque(maxlen=int(SILENCE_LIMIT * rel))
@@ -47,14 +40,14 @@ def listen_for_speech(threshold=THRESHOLD, num_phrases=-1):
     response = []
 
     if len(sys.argv) < 2:
-        print("usage: python3 soundIO.py <.wav file> <threshold>")
+        print("usage: python3 soundIO.py <.wav file> ")
         return
 
     # open the file for reading.
     wf = wave.open(sys.argv[1], 'rb')
     if len(sys.argv) == 3:
         THRESHOLD = int(sys.argv[2])
-    
+
     data = []
     temp = wf.readframes(CHUNK)
 
@@ -66,35 +59,20 @@ def listen_for_speech(threshold=THRESHOLD, num_phrases=-1):
 
     # open stream based on the wave object which has been input.
     streamOut = p.open(format=p.get_format_from_width(wf.getsampwidth()),
-                    channels=wf.getnchannels(),
-                    rate=wf.getframerate(),
-                    output=True)
-    
-    now = time.time()
+                       channels=wf.getnchannels(),
+                       rate=wf.getframerate(),
+                       output=True)
 
-    while (num_phrases == -1 or n > 0):
-        cur_data = streamIn.read(CHUNK)
-        slid_win.append(math.sqrt(abs(audioop.avg(cur_data, 4))))
-        if (started is True):
-            later = time.time()
-            print(later - now)
+    input("press any key to start playing")
 
-            streamOut.write(data)
+    print(time.time())
+    streamOut.write(data)
 
-            later = time.time()
-            print(later - now)
-            started = False
-
-        elif(sum([x > THRESHOLD for x in slid_win]) > 0):
-            print("starting to listen")
-            if(not started):
-                started = True
-
-    streamIn.close()
     streamOut.close()
     p.terminate()
 
     return response
+
 
 if(__name__ == '__main__'):
     listen_for_speech()  # listen to mic.
