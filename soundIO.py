@@ -18,7 +18,7 @@ FLAC_CONV = 'flac -f'  # We need a WAV to FLAC converter. flac is available
                        # on Linux
 
 # Microphone stream config.
-CHUNK = 1024  # CHUNKS of bytes to read each time from mic
+CHUNK = 128  # CHUNKS of bytes to read each time from mic
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 16000
@@ -70,69 +70,67 @@ def listen_for_speech(threshold=THRESHOLD, num_phrases=-1):
     #Open stream
     p = pyaudio.PyAudio()
 
-    stream = p.open(format=FORMAT,
+    streamIn = p.open(format=FORMAT,
                     channels=CHANNELS,
                     rate=RATE,
                     input=True,
                     frames_per_buffer=CHUNK)
 
-    audio2send = []
     cur_data = ''  # current chunk  of audio data
     rel = RATE/CHUNK
     slid_win = deque(maxlen=int(SILENCE_LIMIT * rel))
-    #Prepend audio from 0.5 seconds before noise was detected
-    prev_audio = deque(maxlen=int(PREV_AUDIO * rel))
     started = False
     n = num_phrases
     response = []
 
     if len(sys.argv) < 2:
-        print("usage: python3 soundIO.py <.wav file>")
+        print("usage: python3 soundIO.py <.wav file> <threshold>")
         return
 
     # open the file for reading.
     wf = wave.open(sys.argv[1], 'rb')
+    if len(sys.argv) == 3:
+        THRESHOLD = int(sys.argv[2])
+    
+    data = []
+    temp = wf.readframes(CHUNK)
+
+    while temp:
+        data.append(temp)
+        temp = wf.readframes(CHUNK)
+
+    data = bytes().join(data)
+
+    # open stream based on the wave object which has been input.
+    streamOut = p.open(format=p.get_format_from_width(wf.getsampwidth()),
+                    channels=wf.getnchannels(),
+                    rate=wf.getframerate(),
+                    output=True)
+    
+    now = time.time()
 
     while (num_phrases == -1 or n > 0):
-        cur_data = stream.read(CHUNK)
+        cur_data = streamIn.read(CHUNK)
         slid_win.append(math.sqrt(abs(audioop.avg(cur_data, 4))))
         if (started is True):
             later = time.time()
             print(later - now)
 
-            # create an audio object
-            p = pyaudio.PyAudio()
+            # for elem in data:
+            # while(1):
+            streamOut.write(data)
 
-            # open stream based on the wave object which has been input.
-            stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
-                            channels=wf.getnchannels(),
-                            rate=wf.getframerate(),
-                            output=True)
+            later = time.time()
+            print(later - now)
+            started = False
 
-            # read data (based on the chunk size)
-            data = wf.readframes(CHUNK)
-
-            # play stream (looping from beginning of file to the end)
-            while data != '':
-                # writing to the stream is what *actually* plays the sound.
-                stream.write(data)
-                data = wf.readframes(CHUNK)
-
-            # cleanup stuff.
-            stream.close()
-            p.terminate()
-
-            return
         elif(sum([x > THRESHOLD for x in slid_win]) > 0):
             print("starting to listen")
-            now = time.time()
             if(not started):
                 started = True
-            audio2send.append(cur_data)
-        else:
-            prev_audio.append(cur_data)
 
-    stream.close()
+    streamIn.close()
+    streamOut.close()
     p.terminate()
 
     return response
