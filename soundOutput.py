@@ -22,13 +22,13 @@ SILENCE_LIMIT = 1  # Silence limit in seconds. The max ammount of seconds where
                    # recording finishes and the file is delivered.
 
 def listen_for_speech(threshold=THRESHOLD, num_phrases=-1):
-    """
+    '''
     Listens to Microphone, extracts phrases from it and sends it to 
-    Google's TTS service and returns response. a "phrase" is sound 
+    Google's TTS service and returns response. a 'phrase' is sound 
     surrounded by silence (according to threshold). num_phrases controls
     how many phrases to process before finishing the listening process 
     (-1 for infinite). 
-    """
+    '''
 
     #Open stream
     p = pyaudio.PyAudio()
@@ -41,13 +41,13 @@ def listen_for_speech(threshold=THRESHOLD, num_phrases=-1):
 
     cur_data = ''  # current chunk  of audio data
     rel = RATE/CHUNK
-    slid_win = deque(maxlen=int(SILENCE_LIMIT * rel))
+    # slid_win = deque(maxlen=int(SILENCE_LIMIT * rel))
     started = False
     n = num_phrases
     response = []
 
     if len(sys.argv) < 2:
-        print("usage: python3 soundIO.py <.wav file> <threshold>")
+        print('usage: python3 soundIO.py <.wav file> <threshold>')
         return
 
     # open the file for reading.
@@ -63,32 +63,28 @@ def listen_for_speech(threshold=THRESHOLD, num_phrases=-1):
         temp = wf.readframes(CHUNK)
 
     data = bytes().join(data)
-
+    
     # open stream based on the wave object which has been input.
     streamOut = p.open(format=p.get_format_from_width(wf.getsampwidth()),
-                    channels=wf.getnchannels(),
-                    rate=wf.getframerate(),
-                    output=True)
-    
-    now = time.time()
+                       channels=wf.getnchannels(),
+                       rate=wf.getframerate(),
+                       output=True)
 
     while (num_phrases == -1 or n > 0):
-        cur_data = streamIn.read(CHUNK)
-        slid_win.append(math.sqrt(abs(audioop.avg(cur_data, 4))))
+        cur_data = streamIn.read(CHUNK, exception_on_overflow=False)
+        # slid_win.append(math.sqrt(abs(audioop.avg(cur_data, 4))))
         if (started is True):
-            later = time.time()
-            print(later - now)
+            streamIn.stop_stream()
+            print(time.time())
 
             streamOut.write(data)
 
-            later = time.time()
-            print(later - now)
             started = False
+            streamIn.start_stream()
 
-        elif(sum([x > THRESHOLD for x in slid_win]) > 0):
-            print("starting to listen")
-            if(not started):
-                started = True
+        # elif(sum([x > THRESHOLD for x in slid_win]) > 0):
+        elif(math.sqrt(abs(audioop.avg(cur_data, 4))) > THRESHOLD):
+            started = True
 
     streamIn.close()
     streamOut.close()
