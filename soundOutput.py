@@ -8,6 +8,8 @@ import time
 import math
 import sys
 import time
+import numpy as np
+import librosa
 
 # Microphone stream config.
 CHUNK = 128  # CHUNKS of bytes to read each time from mic
@@ -70,11 +72,18 @@ def listen_for_speech(threshold=THRESHOLD, num_phrases=-1):
                        rate=wf.getframerate(),
                        output=True)
 
+    # This is the reference audio.
+    audio_data = librosa.core.audio.load(sys.argv[1])
+    coeffs = librosa.feature.mfcc(audio_data[0])
+    print(coeffs)
+
     while (num_phrases == -1 or n > 0):
         cur_data = streamIn.read(CHUNK, exception_on_overflow=False)
+        np_data = np.array(list(cur_data), dtype=np.float32)
         # slid_win.append(math.sqrt(abs(audioop.avg(cur_data, 4))))
         if (started is True):
             streamIn.stop_stream()
+            mfcc = librosa.feature.mfcc(np_data)
             print(time.time())
 
             streamOut.write(data)
