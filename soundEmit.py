@@ -22,11 +22,11 @@ SILENCE_LIMIT = 1  # Silence limit in seconds. The max ammount of seconds where
 
 def listen_for_speech(num_phrases=-1):
     """
-    Listens to Microphone, extracts phrases from it and sends it to 
-    Google's TTS service and returns response. a "phrase" is sound 
+    Listens to Microphone, extracts phrases from it and sends it to
+    Google's TTS service and returns response. a "phrase" is sound
     surrounded by silence (according to threshold). num_phrases controls
-    how many phrases to process before finishing the listening process 
-    (-1 for infinite). 
+    how many phrases to process before finishing the listening process
+    (-1 for infinite).
     """
 
     #Open stream
@@ -39,14 +39,15 @@ def listen_for_speech(num_phrases=-1):
     n = num_phrases
     response = []
 
-    if len(sys.argv) < 2:
-        print("usage: python3 soundIO.py <.wav file> ")
+    if len(sys.argv) < 3:
+        print("usage: python3 soundIO.py <.wav file> <sleep_time>")
         return
 
     # open the file for reading.
     wf = wave.open(sys.argv[1], 'rb')
     if len(sys.argv) == 3:
-        THRESHOLD = int(sys.argv[2])
+        #THRESHOLD = int(sys.argv[2])
+        SLEEP_TIME = int(sys.argv[2])
 
     data = []
     temp = wf.readframes(CHUNK)
@@ -65,8 +66,10 @@ def listen_for_speech(num_phrases=-1):
 
     input("press any key to start playing")
 
-    print(time.time())
-    streamOut.write(data)
+    while True:
+        print(time.time())
+        streamOut.write(data)
+        time.sleep(SLEEP_TIME)
 
     streamOut.close()
     p.terminate()
