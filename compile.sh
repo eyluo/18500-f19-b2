@@ -1,3 +1,3 @@
 source venv/bin/activate
-python -m compileall .
+python3 -m compileall .
 echo compiled to __pycache__
