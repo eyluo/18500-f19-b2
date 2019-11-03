@@ -12,4 +12,8 @@ fi
 THRESHOLD=$1
 
 sudo sntp -sS $TIME_SERVER
-python3 ./demo-midpoint/soundOutput.py ./samples/cyrus.wav $THRESHOLD
+
+python3 -m compileall .
+echo compiled to __pycache__
+
+python3 __pycache__/soundOutput.cpython-37.pyc spencer_cyrus.wav $THRESHOLD

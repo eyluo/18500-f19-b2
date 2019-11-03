@@ -12,7 +12,7 @@ import numpy as np
 import librosa
 
 # Microphone stream config.
-CHUNK = 512  # CHUNKS of bytes to read each time from mic
+CHUNK = 128  # CHUNKS of bytes to read each time from mic
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 16000
@@ -30,6 +30,7 @@ def listen_for_speech(threshold=THRESHOLD, num_phrases=-1):
     num_phrases controls how many phrases to process before finishing the listening process (-1 for infinite). 
 
     Sample usage: [:~/18500-f19-b2] $ python3 demo-midpoint/soundOutput.py samples/cyrus.wav 1000
+    python3 demo-midpoint/__pycache__/soundOutput.cpython-37.pyc cyrus/spencer_cyrus.wav 1000
     '''
 
     # Open stream
@@ -106,7 +107,8 @@ def listen_for_speech(threshold=THRESHOLD, num_phrases=-1):
             # Calculate lowest MFCC error from sample data
             for ref_mfcc in mfcc_vals:
                 # Mean squared error
-                mfcc_error = np.square((ref_mfcc - mfcc).mean(axis=None))
+                diff = ref_mfcc - mfcc
+                mfcc_error = np.square((diff).mean(axis=None))
                 if (mfcc_error < lowest_mfcc_error):
                     lowest_mfcc_error = mfcc_error
 
