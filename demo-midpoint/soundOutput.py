@@ -12,7 +12,7 @@ import numpy as np
 import librosa
 
 # Microphone stream config.
-CHUNK = 128  # CHUNKS of bytes to read each time from mic
+CHUNK = 512  # CHUNKS of bytes to read each time from mic
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 16000
@@ -21,7 +21,7 @@ SILENCE_LIMIT = 1  # Silence limit in seconds. The max ammount of seconds where
                    # only silence is recorded. When this time passes the
                    # recording finishes and the file is delivered.
 THRESHOLD_MSE_MFCC = 1400
-SAMPLES = "samples" # Folder to read reference data for error comparison from
+SAMPLES = "hey" # Folder to read reference data for error comparison from
 
 def listen_for_speech(threshold=THRESHOLD, num_phrases=-1):
     '''
