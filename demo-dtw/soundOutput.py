@@ -21,7 +21,7 @@ THRESHOLD = 1000  # Cutoff for whether the sound is interpreted as noise or sile
 SILENCE_LIMIT = 1  # Silence limit in seconds. The max ammount of seconds where
                    # only silence is recorded. When this time passes the
                    # recording finishes and the file is delivered.
-THRESHOLD_MSE_MFCC = 1400
+THRESHOLD_MSE = 1400
 SAMPLES = "hey" # Folder to read reference data for error comparison from
 
 def listen_for_speech(threshold=THRESHOLD, num_phrases=-1):
@@ -83,20 +83,16 @@ def listen_for_speech(threshold=THRESHOLD, num_phrases=-1):
         print("File: {}".format(fp))
         t1 = time.time()
         audio_data = librosa.core.audio.load(fp)
-        # a = type(audio_data[0])
-        # print(type(audio_data[0]))
         t2 = time.time()
         ref_data.append(audio_data[0])
-        # print(len(ref_data))
-        # print("\n\n\n\n\n\n\n\n\n\n\n\n")
         print("Loading data:", t2 - t1)
 
     print(ref_data)
-    # ref_data = np.array(ref_data, dtype=np.float32)
 
     t1 = time.time()
     print("Loaded reference data in {}...".format(t1 - t0))
 
+    lowest_dtw_dist = float('inf')
     while (num_phrases == -1 or n > 0):
         cur_data = streamIn.read(CHUNK, exception_on_overflow=False)
         t0 = time.time()
@@ -105,40 +101,27 @@ def listen_for_speech(threshold=THRESHOLD, num_phrases=-1):
         if (started is True):
             streamIn.stop_stream()
 
-            # print(np_data)
+            clip_mfcc = librosa.feature.mfcc(np_data)
+            for dt in ref_data[1:]:
+                # do mfcc before DTW
+                ref_mfcc = librosa.feature.mfcc(dt)
+                ref_resized = np.resize(ref_mfcc[:, 0], (20, 1))
+                distance, path = fastdtw(ref_resized, clip_mfcc)
+                # print("ref_mfcc {} {}".format(type(ref_mfcc), ref_mfcc.shape))
+                # print("clip_mfcc {} {}".format(type(clip_mfcc), clip_mfcc.shape))
+                # print("ref_mfcc_resized {} {}".format(type(ref_resized), ref_resized.shape))
+                # print('DISTANCE {}'.format(distance))
 
-            # Calculate lowest MFCC error from sample data
-            # print(ref_data.shape)
-            # for dt in np.nditer(ref_data):
-                # print("YOOOOO = %d" % (dt))
-
-            # i = 0
-            # for dt in ref_data:
-            dt = ref_data[0]
-            # print("YOOOOO={}".format(dt))
-            distance, path = fastdtw(np_data, dt)
-            print("Path:", path[:50])
-            print("End Path:", path[-50:])
-
-            print("===")
-
-            dt2 = ref_data[2]
-            distance1, path1 = fastdtw(dt, dt2)
-            print("Path1: ", path1[:50])
-            print("End Path1: ", path1[-50:])
-
-            return
-                # i += 1
-
-                # if (i == 2):
-                #     return
-
+                if (distance < lowest_dtw_dist):
+                    lowest_dtw_dist = distance
             
-            # if (lowest_mfcc_error < THRESHOLD_MSE_MFCC):
-            #     streamOut.write(data)
-            #     lowest_mfcc_error = float('inf')
-            #     # Prevent infinite loop where speaker continues to detect itself
-            #     time.sleep(1)
+            print("lowest dtw dist {}, threshold {}".format(lowest_dtw_dist, THRESHOLD_MSE))
+            if (lowest_dtw_dist < THRESHOLD_MSE):
+                streamOut.write(data)
+                lowest_dtw_dist = float('inf')
+                # Prevent infinite loop where speaker continues to detect itself
+                print("hi")
+                time.sleep(1)
 
             started = False
             streamIn.start_stream()
