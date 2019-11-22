@@ -107,7 +107,7 @@ def listen_for_speech(threshold=THRESHOLD, num_phrases=-1):
             streamIn.stop_stream()
 
             # DELETE THIS LINE LATER
-            # np_data = ref_data[2]
+            # np_data = ref_data[1]
 
             clip_mfcc = librosa.feature.mfcc(np_data, sr=16000, n_mfcc=13) # Return shape: [n_mfcc, t]
             clip_resized = clip_mfcc[1:, :] # Discard intensity vector. Shape: [n_mfcc - 1, t]
@@ -123,15 +123,17 @@ def listen_for_speech(threshold=THRESHOLD, num_phrases=-1):
                 ref_time, clip_time = pair
                 warped_mfccs[:, ref_time] = clip_resized[:, clip_time]
             
-            mse = np.square((warped_mfccs - ref_resized).mean(axis=None))
+            mse = (np.square(warped_mfccs - ref_resized)).mean(axis=None)
+            # mse = np.square(warped_mfccs - ref_resized)
 
             # print('clip_resized.shape: ', clip_resized.shape)
             # print('ref_resized.shape: ', ref_resized.shape)
             # print('warped_mfccs.shape: ', warped_mfccs.shape)
+            # print('===')
             print('mse: ', mse)
             lowest_dtw_dist = mse
 
-            # pdb.set_trace()
+            pdb.set_trace()
 
             # if (distance < lowest_dtw_dist):
                 # lowest_dtw_dist = distance
