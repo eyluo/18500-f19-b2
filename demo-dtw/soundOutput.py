@@ -16,6 +16,7 @@ import pdb
 # Microphone stream config.
 OUTPUT_CHUNK_SIZE = 128 # CHUNK for jamming sound
 MIC_CHUNK_SIZE = 1024 # CHUNKS of bytes to read each time from mic
+                      # TODO: sliding window of 10ms short time frames, for 20-35ms total
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 16000
@@ -23,7 +24,7 @@ THRESHOLD = 1000  # Cutoff for whether the sound is interpreted as noise or sile
 SILENCE_LIMIT = 1  # Silence limit in seconds. The max ammount of seconds where
                    # only silence is recorded. When this time passes the
                    # recording finishes and the file is delivered.
-THRESHOLD_MSE = 1400
+THRESHOLD_MSE = 8 #1400
 SAMPLES = "hey" # Folder to read reference data for error comparison from
 
 def listen_for_speech(threshold=THRESHOLD, num_phrases=-1):
@@ -80,14 +81,16 @@ def listen_for_speech(threshold=THRESHOLD, num_phrases=-1):
     files = [f for f in os.listdir(SAMPLES) if os.path.isfile(os.path.join(SAMPLES, f))]
     ref_data = []
     
-    for fp in files:
+    for (i, fp) in enumerate(files):
+        if (fp == ".DS_Store"): 
+            continue
         fp = "{}/{}".format(SAMPLES,fp)
-        print("File: {}".format(fp))
+        print("File {}: {}".format(i, fp))
         t1 = time.time()
-        audio_data = librosa.core.audio.load(fp, sr=16000) # TODO: figure how to switch to hamming window
+        audio_data = librosa.core.audio.load(fp, sr=16000) # TODO: figure how to switch to hamming window. default is kaiser window.
         t2 = time.time()
         ref_data.append(audio_data[0])
-        print("Loading data:", t2 - t1)
+        # print("Loading data:", t2 - t1)
 
     print(ref_data)
 
@@ -103,6 +106,9 @@ def listen_for_speech(threshold=THRESHOLD, num_phrases=-1):
         if (started is True):
             streamIn.stop_stream()
 
+            # DELETE THIS LINE LATER
+            # np_data = ref_data[2]
+
             clip_mfcc = librosa.feature.mfcc(np_data, sr=16000, n_mfcc=13) # Return shape: [n_mfcc, t]
             clip_resized = clip_mfcc[1:, :] # Discard intensity vector. Shape: [n_mfcc - 1, t]
             # for dt in ref_data[1:]:
@@ -111,10 +117,24 @@ def listen_for_speech(threshold=THRESHOLD, num_phrases=-1):
             ref_mfcc = librosa.feature.mfcc(dt, sr=16000, n_mfcc=13) # Return shape: [n_mfcc, t]
             ref_resized = ref_mfcc[1:, :] # Discard intensity vector. Shape: [n_mfcc - 1, t]
             distance, path = fastdtw(np.transpose(ref_resized), np.transpose(clip_resized))
-            pdb.set_trace()
+            # pdb.set_trace() # TODO: improve mapping. average vs truncating for shortening data?
+            warped_mfccs = np.zeros(ref_resized.shape)
+            for pair in path:
+                ref_time, clip_time = pair
+                warped_mfccs[:, ref_time] = clip_resized[:, clip_time]
+            
+            mse = np.square((warped_mfccs - ref_resized).mean(axis=None))
 
-            if (distance < lowest_dtw_dist):
-                lowest_dtw_dist = distance
+            # print('clip_resized.shape: ', clip_resized.shape)
+            # print('ref_resized.shape: ', ref_resized.shape)
+            # print('warped_mfccs.shape: ', warped_mfccs.shape)
+            print('mse: ', mse)
+            lowest_dtw_dist = mse
+
+            # pdb.set_trace()
+
+            # if (distance < lowest_dtw_dist):
+                # lowest_dtw_dist = distance
             
             print("lowest dtw dist {}, threshold {}".format(lowest_dtw_dist, THRESHOLD_MSE))
             if (lowest_dtw_dist < THRESHOLD_MSE):
