@@ -103,14 +103,17 @@ def listen_for_speech(threshold=THRESHOLD, num_phrases=-1):
         if (started is True):
             streamIn.stop_stream()
 
+            np_data = ref_data[2]
             clip_mfcc = librosa.feature.mfcc(np_data, sr=16000, n_mfcc=13) # Return shape: [n_mfcc, t]
             clip_resized = clip_mfcc[1:, :] # Discard intensity vector. Shape: [n_mfcc - 1, t]
             # for dt in ref_data[1:]:
-            dt = ref_data[0] # 0th data sample for testing purposes
+            dt = ref_data[1] # 0th data sample for testing purposes
             # do mfcc before DTW
             ref_mfcc = librosa.feature.mfcc(dt, sr=16000, n_mfcc=13) # Return shape: [n_mfcc, t]
             ref_resized = ref_mfcc[1:, :] # Discard intensity vector. Shape: [n_mfcc - 1, t]
             distance, path = fastdtw(np.transpose(ref_resized), np.transpose(clip_resized))
+
+            mse = find_mse(ref_resized.tolist(), clip_resized.tolist(), path)
             pdb.set_trace()
 
             if (distance < lowest_dtw_dist):
@@ -135,6 +138,15 @@ def listen_for_speech(threshold=THRESHOLD, num_phrases=-1):
     p.terminate()
 
     return response
+
+def find_mse(arr1, arr2, path):
+    mse = 0
+    for idx in range(len(arr1)):
+        coeffs1 = arr1[idx]
+        coeffs2 = arr2[idx]
+        for (i, j) in path:
+            mse += (coeffs1[i]-coeffs2[j])**2
+    return mse
 
 if(__name__ == '__main__'):
     listen_for_speech()  # listen to mic.

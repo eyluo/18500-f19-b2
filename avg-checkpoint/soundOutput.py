@@ -92,10 +92,8 @@ def listen_for_speech(threshold=THRESHOLD, num_phrases=-1):
     t1 = time.time()
     print("Loaded reference MFCC data in {}...".format(t1 - t0))
 
-    print(len(mfcc_vals))
-    print(mfcc_vals[0])
-    print(mfcc_vals[0][0])
-    print(mfcc_vals[0][0][0])
+    for val in mfcc_vals:
+        print(val)
 
     if (len(mfcc_vals) < 1):
         print('err: no samples available')
