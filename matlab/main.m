@@ -37,50 +37,53 @@ imagesc(dct_row);
 % Initialize the audio IO stream
 mic_in = audioDeviceReader(SAMPLE_RATE, NUM_SAMPLES);
 
-NUM_LOOP = 50;
-audio_data = zeros(NUM_LOOP, NUM_SAMPLES);
-for i=1:NUM_LOOP
-    temp = mic_in();
-    audio_data(i, :) = temp;
+% NUM_LOOP = 50;
+% audio_data = zeros(NUM_LOOP, NUM_SAMPLES);
+% for i=1:NUM_LOOP
+%     temp = mic_in();
+%     audio_data(i, :) = temp;
+% end
+% 
+% a = audio_data';
+% a = a(:);
+% 
+% sound(a, SAMPLE_RATE, 8);
+
+mic_in();
+mfcc_vals = zeros(1,13);
+% loop on audio samples, begin logging values when volume threshold
+% surpassed
+NUM_LOOPS = 100;
+audio_data = zeros(NUM_LOOPS,NUM_SAMPLES);
+
+for i = 1:NUM_LOOPS
+    tic;
+    audioFromDevice = mic_in();
+    audio_data(i, :) = audioFromDevice;
+%     win = hann(NUM_SAMPLES,"periodic");
+%     S = stft(audioFromDevice,"Window",win,"OverlapLength",512,"Centered",false);
+    coeffs = mfcc(audioFromDevice, SAMPLE_RATE, "LogEnergy","Ignore");
+    mfcc_vals(i, :) = coeffs;
+    
+    toc;
+    
+%     subplot(2,1,1)
+%     spectrogram(audioFromDevice, SAMPLE_RATE);
+%     subplot(2,1,2);
+%     plot(dct(coeffs));
+%     drawnow 
+
+%     tic;
+%     [dist, ix, iy] = dtw(ref_coeffs, coeffs);
+%     toc;
+% TODO: perform the time warping across the MFCCs
+% TODO: verify that the spectrogram of DCT(warped_mfccs) matches
+    
+%     pause;
 end
 
 a = audio_data';
 a = a(:);
 
+release(mic_in);
 sound(a, SAMPLE_RATE, 8);
-
-% mic_in();
-% mfcc_vals = zeros(1,13);
-% % loop on audio samples, begin logging values when volume threshold
-% % surpassed
-% NUM_LOOPS = 50;
-% audio_data = zeros(NUM_LOOPS,480);
-% 
-% for i = 1:NUM_LOOPS
-%     tic;
-%     audioFromDevice = mic_in();
-%     audio_data(i, :) = audioFromDevice;
-% %     win = hann(NUM_SAMPLES,"periodic");
-% %     S = stft(audioFromDevice,"Window",win,"OverlapLength",512,"Centered",false);
-%     coeffs = mfcc(audioFromDevice, SAMPLE_RATE, "LogEnergy","Ignore");
-%     mfcc_vals(i, :) = coeffs;
-%     
-%     toc;
-%     
-% %     subplot(2,1,1)
-% %     spectrogram(audioFromDevice, SAMPLE_RATE);
-% %     subplot(2,1,2);
-% %     plot(dct(coeffs));
-% %     drawnow 
-% 
-% %     tic;
-% %     [dist, ix, iy] = dtw(ref_coeffs, coeffs);
-% %     toc;
-% % TODO: perform the time warping across the MFCCs
-% % TODO: verify that the spectrogram of DCT(warped_mfccs) matches
-%     
-% %     pause;
-% end
-% 
-% release(mic_in);
-% sound(audio_data(:), SAMPLE_RATE, 8);
