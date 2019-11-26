@@ -7,63 +7,47 @@ FRAME_LENGTH = 30e-3;
 NUM_SAMPLES = SAMPLE_RATE * FRAME_LENGTH;
 
 % load response sound file
-[ref_sound, fs_ref_sound] = audioread("dsp1.m4a");
+REF_FILE = "welcome16k.wav";
+[ref_sound, fs_ref_sound] = audioread(REF_FILE);
 ref_resampled = resample(ref_sound, SAMPLE_RATE, fs_ref_sound);
 % [ref_sound, fs_ref_sound] = audioread("spencer_hey.wav");
 [ref_coeffs,ref_delta,ref_deltaDelta,ref_loc] = mfcc(ref_resampled, SAMPLE_RATE, "LogEnergy","Ignore");
 % sound(ref_resampled, SAMPLE_RATE, 8);
 
-dct_row = flip(idct(ref_coeffs'), 1);
+ref_coeffs_padded = padarray(ref_coeffs, [0 27], 'post'); % zero padded to 40 cepstral coeffs
+dct_row = flip(idct(ref_coeffs_padded'), 1);
 
 figure
+colormap jet
 subplot(2,1,1)
-spectrogram(ref_sound,'yaxis');
+% spectrogram(ref_sound,'yaxis');
+imagesc(flip(idct(ref_coeffs'), 1));
+title(sprintf("MFCC of %s (not zero padded)", REF_FILE));
 subplot(2,1,2)
 imagesc(dct_row);
+title(sprintf("MFCC of %s (zero padded)", REF_FILE));
 
-
-% Nx = length(ref_sound);
-% nsc = floor(Nx/4.5);
-% nov = floor(nsc*.9);
-% nff = max(256,2^nextpow2(nsc));
-
-% subplot(2,1,1)
-% spectrogram(ref_sound,hamming(nsc),nov,nff, 'yaxis');
-% title('spectrogram() on the reference sound');
-% subplot(2,1,2);
-% imagesc(dct2(ref_coeffs));
-% title('dct2() on the MFCC coefficients');
 
 % Initialize the audio IO stream
 mic_in = audioDeviceReader(SAMPLE_RATE, NUM_SAMPLES);
 
-% NUM_LOOP = 50;
-% audio_data = zeros(NUM_LOOP, NUM_SAMPLES);
-% for i=1:NUM_LOOP
-%     temp = mic_in();
-%     audio_data(i, :) = temp;
-% end
-% 
-% a = audio_data';
-% a = a(:);
-% 
-% sound(a, SAMPLE_RATE, 8);
-
 mic_in();
-mfcc_vals = zeros(1,13);
-% loop on audio samples, begin logging values when volume threshold
-% surpassed
+
+% loop on audio samples
 NUM_LOOPS = 100;
-audio_data = zeros(NUM_LOOPS,NUM_SAMPLES);
+NUM_CEP_COEFFS = 40;
+
+mfcc_vals = zeros(1, NUM_CEP_COEFFS);
+audio_data = zeros(NUM_LOOPS, NUM_SAMPLES);
 
 for i = 1:NUM_LOOPS
     tic;
     audioFromDevice = mic_in();
+    % TODO: begin logging values when volume threshold surpassed
+    % ( maybe do this using norm() )?
     audio_data(i, :) = audioFromDevice;
-%     win = hann(NUM_SAMPLES,"periodic");
-%     S = stft(audioFromDevice,"Window",win,"OverlapLength",512,"Centered",false);
     coeffs = mfcc(audioFromDevice, SAMPLE_RATE, "LogEnergy","Ignore");
-    mfcc_vals(i, :) = coeffs;
+    mfcc_vals(i, 1:numel(coeffs)) = coeffs; % zero padded to 40 cepstral coeffs
     
     toc;
     
