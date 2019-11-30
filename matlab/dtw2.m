@@ -4,7 +4,7 @@
 SAMPLE_RATE = 16e3; % 16 kHz
 FRAME_LENGTH = 30e-3; 
 NUM_SAMPLES = SAMPLE_RATE * FRAME_LENGTH;
-NUM_LOOPS = 4;
+NUM_LOOPS = 3;
 VOLUME_THRESHOLD = 1e-5;
 MSE_THRESHOLD = 2.75;
 
@@ -20,8 +20,7 @@ ref_coeffs = mfcc(ref_sound, SAMPLE_RATE, "LogEnergy","Ignore");
 %% Initialize other values
 % Initialize the audio IO stream
 mic_in = audioDeviceReader(SAMPLE_RATE, NUM_SAMPLES);
-
-mic_in();
+mic_in(); % Pull one value from the buffer in case there's a slow start
 mfcc_vals = zeros(NUM_LOOPS, 13);
 
 %% Loop on audio prompt
