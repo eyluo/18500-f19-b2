@@ -6,7 +6,7 @@ FRAME_LENGTH = 30e-3;
 NUM_SAMPLES = SAMPLE_RATE * FRAME_LENGTH;
 NUM_LOOPS = 3;
 VOLUME_THRESHOLD = 1e-5;
-MSE_THRESHOLD = 2.00;
+MSE_THRESHOLD = 2.75;
 
 %% Load output and reference sound files
 % load response sound file
@@ -56,6 +56,7 @@ while true
         if (err < MSE_THRESHOLD)
             play(output_player);
             waitfor(output_player, 'Running');
+            return;
         end
     end
 end
