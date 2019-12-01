@@ -6,12 +6,14 @@ FRAME_LENGTH = 30e-3;
 NUM_SAMPLES = SAMPLE_RATE * FRAME_LENGTH;
 NUM_LOOPS = 3;
 VOLUME_THRESHOLD = 1e-5;
-MSE_THRESHOLD = 2.75;
+MSE_THRESHOLD = 2.00;
 
 %% Load output and reference sound files
 % load response sound file
 [output, fs_out_sound] = audioread("spencer_cyrus.wav");
 output_sound = resample(output, SAMPLE_RATE, fs_out_sound);
+
+output_player = audioplayer(output_sound, SAMPLE_RATE);
 
 [ref_in, fs_ref_sound] = audioread("spencer_hey.wav");
 ref_sound = resample(ref_in, SAMPLE_RATE, fs_out_sound);
@@ -46,14 +48,14 @@ while true
         end
         
         [dist, ix, iy] = dtw(ref_coeffs_trans, mfcc_vals);
-        mfcc_warped = mfcc_vals(:, iy);
+        mfcc_warped = mfcc_vals(:,iy);
 
         err = mse(ref_coeffs_trans, mfcc_warped);
         disp(sprintf("Error (DTW + MSE): %d, Threshold: %d", err, MSE_THRESHOLD));   
 
         if (err < MSE_THRESHOLD)
-            sound(output_sound, SAMPLE_RATE);
-            return;
+            play(output_player);
+            waitfor(output_player, 'Running');
         end
     end
 end
