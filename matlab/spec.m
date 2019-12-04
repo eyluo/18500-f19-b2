@@ -1,3 +1,5 @@
+clear all; clc;; close all
+
 SAMPLE_RATE = 16e3; % 16 kHz
 FRAME_LENGTH = 1000e-3; 
 NUM_SAMPLES = SAMPLE_RATE * FRAME_LENGTH;
@@ -34,24 +36,25 @@ REF_FILE = "spencer_hey.wav";
 [ref_sound, fs_ref_sound] = audioread(REF_FILE);
 ref_resampled = resample(ref_sound, SAMPLE_RATE, fs_ref_sound);
 ref_coeffs = mfcc(ref_resampled, SAMPLE_RATE, "LogEnergy","Ignore");
+ref_coeffs_trans = ref_coeffs';
 ref_coeffs_padded = padarray(ref_coeffs, [0 27], 'post'); % zero padded to 40 cepstral coeffs
 
-INPUT_SOUND_1 = "spencer_hey1.wav";
+INPUT_SOUND_1 = "spencer_hey3.m4a";
 [input_sound_1, fs_input_sound_1] = audioread(INPUT_SOUND_1);
 input_sound_1_resampled = resample(input_sound_1, SAMPLE_RATE, fs_ref_sound);
-input_coeffs_1 = mfcc(ref_resampled, SAMPLE_RATE, "LogEnergy","Ignore");
+input_coeffs_1 = mfcc(input_sound_1_resampled, SAMPLE_RATE, "LogEnergy","Ignore");
 
 input_coeffs_padded_1 = padarray(input_coeffs_1, [0 27], 'post'); % zero padded to 40 cepstral coeffs
-dct_input_1 = flip(idct(input_coeffs_padded_1'), 1);
-[dist, ix, iy] = dtw(ref_coeffs, input_coeffs_1);
-mfcc_warped_1 = input_coeffs_1(:,iy);
-mfcc_padded_warped_1 = padarray(mfcc_warped_1, [0 27], 'post'); % zero padded to 40 cepstral coeffs
+input_coeffs_1_trans = input_coeffs_1';
+[dist, ix, iy] = dtw(ref_coeffs_trans, input_coeffs_1_trans);
+mfcc_warped_1 = ref_coeffs_trans(:,ix);
+mfcc_padded_warped_1 = padarray(mfcc_warped_1', [0 27], 'post'); % zero padded to 40 cepstral coeffs
 
 subplot(3,1,1)
 imagesc(flip(idct(ref_coeffs_padded'), 1));
 title(sprintf("MFCC of %s (zero padded)", "reference sample (spencer\_hey.wav)"));
 subplot(3,1,2);
-imagesc(flip(idct(dct_input_1'), 1));
+imagesc(flip(idct(input_coeffs_padded_1'), 1));
 title(sprintf("MFCC of %s (zero padded)", "original input"));
 subplot(3,1,3);
 imagesc(flip(idct(mfcc_padded_warped_1'), 1));
