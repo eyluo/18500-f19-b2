@@ -11,4 +11,4 @@ TIME_SERVER=time.apple.com
 
 
 sudo sntp -sS $TIME_SERVER
-/Applications/MATLAB_R2018a.app/bin/matlab -nodisplay -nodesktop -r "run dtw2.m"
+/Applications/MATLAB_R2018b.app/bin/matlab -nodisplay -nodesktop -r "run dtw2.m"
