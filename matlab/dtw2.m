@@ -56,6 +56,7 @@ while true
         if (err < MSE_THRESHOLD)
             play(output_player);
             waitfor(output_player, 'Running');
+            return;
         end
     end
 end
